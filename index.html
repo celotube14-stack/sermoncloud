@@ -1,285 +1,235 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SermonCloud</title>
-    <link rel="manifest" href="manifest.json">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        body {
-            background-color: #0f172a;
-            color: #f8fafc;
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-        }
-        input, select, textarea {
-            font-size: 16px !important;
-            background-color: #1e293b !important;
-            border: 1px solid #334155 !important;
-            color: #f8fafc !important;
-            border-radius: 0.5rem;
-            padding: 0.75rem 1rem;
-        }
-        input::placeholder, textarea::placeholder {
-            color: #94a3b8 !important;
-        }
-        .btn-primary {
-            background-color: #f59e0b;
-            color: #0f172a;
-            font-weight: 600;
-            padding: 0.75rem 1.25rem;
-            border-radius: 0.5rem;
-            cursor: pointer;
-        }
-        .btn-primary:hover {
-            background-color: #d97706;
-        }
-    </style>
-</head>
-<body class="min-h-screen flex flex-col">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SermonCloud - Gestor de Sermões</title>
+  
+  <!-- Configurações PWA e Mobile -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3389/3389081.png">
 
-    <!-- CABEÇALHO -->
-    <header class="bg-slate-900 border-b border-slate-800 px-4 py-3 sticky top-0 z-50">
-        <div class="max-w-6xl mx-auto flex justify-between items-center">
-            <div class="flex items-center space-x-3">
-                <span class="text-2xl">📖</span>
-                <h1 class="text-xl font-bold text-amber-500">SermonCloud</h1>
-            </div>
-            <div id="user-profile" class="flex items-center space-x-3"></div>
-            <button id="logout-btn" class="text-xs text-slate-400 hover:text-white ml-2 hidden">Sair</button>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- SDKs do Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen font-sans antialiased">
+
+  <!-- TELA DE LOGIN -->
+  <div id="authContainer" class="min-h-screen flex flex-col items-center justify-center p-4">
+    <div class="bg-slate-800 p-8 rounded-2xl shadow-2xl border border-slate-700 max-w-md w-full text-center space-y-6">
+      <div class="inline-flex p-3 bg-amber-500/10 text-amber-500 rounded-xl mb-2">
+        <svg class="w-10 h-10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+        </svg>
+      </div>
+      <div>
+        <h1 class="text-2xl font-bold text-slate-100">SermonCloud</h1>
+        <p class="text-sm text-slate-400 mt-1">Plataforma de criação de sermões para equipes ministeriais.</p>
+      </div>
+      <button id="googleLoginBtn" type="button" class="w-full flex items-center justify-center gap-3 bg-white text-slate-800 font-semibold py-3 px-4 rounded-xl shadow-lg hover:bg-slate-100 transition active:scale-95 cursor-pointer">
+        <svg class="w-5 h-5" viewBox="0 0 24 24">
+          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+        </svg>
+        Entrar com conta Google
+      </button>
+    </div>
+  </div>
+
+  <!-- APLICAÇÃO PRINCIPAL -->
+  <div id="appContainer" class="hidden min-h-screen flex flex-col">
+    <header class="bg-slate-800 border-b border-slate-700/80 px-6 py-3 flex items-center justify-between sticky top-0 z-10">
+      <div class="flex items-center gap-3">
+        <div class="p-2 bg-amber-500/10 text-amber-500 rounded-lg">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+          </svg>
         </div>
+        <span class="font-bold text-lg text-slate-100 tracking-wide">SermonCloud</span>
+      </div>
+
+      <div class="flex items-center gap-4">
+        <div class="flex items-center gap-3 bg-slate-900/50 px-3 py-1.5 rounded-full border border-slate-700/50">
+          <img id="userAvatar" src="" alt="Avatar" class="w-7 h-7 rounded-full border border-amber-500/50">
+          <span id="userName" class="text-xs font-medium text-slate-200"></span>
+        </div>
+        <button id="logoutBtn" class="text-slate-400 hover:text-red-400 transition text-xs font-semibold px-2 py-1">Sair</button>
+      </div>
     </header>
 
-    <!-- TELA DE LOGIN -->
-    <section id="auth-section" class="flex-1 flex items-center justify-center p-4">
-        <div class="bg-slate-800 border border-slate-700 p-8 rounded-xl shadow-2xl max-w-sm w-full text-center">
-            <div class="bg-amber-500/10 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span class="text-3xl">📖</span>
-            </div>
-            <h2 class="text-2xl font-bold text-white mb-2">SermonCloud</h2>
-            <p class="text-slate-400 text-sm mb-6">Plataforma de criação de sermões.</p>
-            
-            <button id="login-btn" type="button" class="w-full bg-white text-slate-900 font-semibold py-3 px-4 rounded-lg flex items-center justify-center space-x-3 hover:bg-slate-100 transition shadow-md cursor-pointer">
-                <svg class="w-5 h-5" viewBox="0 0 24 24">
-                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
-                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
-                </svg>
-                <span>Entrar com conta Google</span>
+    <div class="flex-1 flex flex-col md:flex-row overflow-hidden">
+      <!-- PAINEL ESQUERDO: LISTA DE SERMÕES E FILTROS -->
+      <aside class="w-full md:w-80 bg-slate-800/40 border-r border-slate-700/80 flex flex-col">
+        <div class="p-4 border-b border-slate-700/80 space-y-3">
+          <div class="flex items-center justify-between">
+            <h2 class="font-bold text-sm text-slate-300 uppercase tracking-wider">Meus Sermões</h2>
+            <button id="newSermonBtn" class="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-3 py-1 rounded-lg text-xs transition active:scale-95 flex items-center gap-1">
+              + Novo
             </button>
+          </div>
+          
+          <!-- Filtro por Marcador -->
+          <div>
+            <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">Filtrar por Marcador:</label>
+            <select id="tagFilterSelect" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500">
+              <option value="ALL">Todos os Marcadores</option>
+            </select>
+          </div>
         </div>
-    </section>
 
-    <!-- APLICAÇÃO PRINCIPAL -->
-    <main id="main-app" class="flex-1 max-w-6xl w-full mx-auto p-4 md:p-6 hidden">
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div id="sermonList" class="flex-1 overflow-y-auto p-3 space-y-2"></div>
+      </aside>
+
+      <!-- EDITOR CENTRAL -->
+      <main class="flex-1 flex flex-col bg-slate-900 overflow-y-auto">
+        <div class="p-4 md:p-6 max-w-4xl w-full mx-auto space-y-4">
+          
+          <!-- Título e Categoria -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <input type="text" id="sermonTitle" placeholder="Título do Sermão..." class="md:col-span-2 bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500 text-lg font-bold">
+            <input type="text" id="sermonCategory" placeholder="Categoria (ex: Fé, Família)" class="bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500 text-sm">
+          </div>
+
+          <!-- Marcadores / Tags -->
+          <input type="text" id="sermonTags" placeholder="Marcadores (ex: Palavra de Oportunidade, Culto de Jovens, Santa Ceia)" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500 text-xs">
+
+          <!-- Referências Bíblicas -->
+          <input type="text" id="sermonReferences" placeholder="Referências Principais (ex: João 3:16-18; Salmos 23)" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500 text-xs">
+
+          <!-- Campo de Capa do Sermão -->
+          <div class="flex flex-col sm:flex-row gap-2 items-center bg-slate-800/40 p-2 rounded-xl border border-slate-700/60">
+            <input type="text" id="sermonCover" placeholder="URL da Imagem de Capa (https://...)" class="flex-1 w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500 text-xs">
+            <label class="bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs font-semibold px-3 py-1.5 rounded-lg cursor-pointer whitespace-nowrap">
+              Upload Imagem
+              <input type="file" id="coverFileInput" accept="image/*" class="hidden">
+            </label>
+          </div>
+
+          <!-- Preview da Capa -->
+          <div id="coverPreviewContainer" class="hidden relative rounded-xl overflow-hidden max-h-40 border border-slate-700/80">
+            <img id="coverPreview" src="" class="w-full h-40 object-cover">
+            <button id="removeCoverBtn" class="absolute top-2 right-2 bg-red-600/80 hover:bg-red-600 text-white p-1 rounded-full text-xs">✕ Remover</button>
+          </div>
+
+          <!-- Toolbar -->
+          <div class="flex flex-wrap items-center justify-between gap-2 bg-slate-800/80 border border-slate-700/80 p-2 rounded-xl">
+            <div class="flex items-center gap-1">
+              <button onclick="execCmd('bold')" class="px-2.5 py-1 bg-slate-700 hover:bg-slate-600 rounded text-xs font-bold text-slate-200">B</button>
+              <button onclick="execCmd('italic')" class="px-2.5 py-1 bg-slate-700 hover:bg-slate-600 rounded text-xs italic text-slate-200">I</button>
+              <button onclick="execCmd('underline')" class="px-2.5 py-1 bg-slate-700 hover:bg-slate-600 rounded text-xs underline text-slate-200">U</button>
+              <div class="h-4 w-px bg-slate-600 mx-1"></div>
+              <button onclick="highlightText('#fef08a')" class="px-2 py-1 bg-yellow-300 text-slate-900 font-bold rounded text-xs">A</button>
+              <button onclick="highlightText('#bbf7d0')" class="px-2 py-1 bg-green-300 text-slate-900 font-bold rounded text-xs">A</button>
+              <button onclick="highlightText('#fbcfe8')" class="px-2 py-1 bg-pink-300 text-slate-900 font-bold rounded text-xs">A</button>
+            </div>
             
-            <!-- EDITOR -->
-            <div class="lg:col-span-2 space-y-6">
-                <form id="sermon-form" class="bg-slate-800/80 border border-slate-700 p-4 md:p-6 rounded-xl space-y-4">
-                    <h2 class="text-lg font-semibold text-amber-400">Criar / Editar Sermão</h2>
-                    <input type="text" id="sermon-title" placeholder="Título do Sermão..." class="w-full" required>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <input type="text" id="sermon-category" placeholder="Categoria (ex: Fé, Família)" class="w-full">
-                        <input type="text" id="sermon-tags" placeholder="Marcadores (separados por vírgula)" class="w-full">
-                    </div>
-                    <input type="text" id="sermon-references" placeholder="Referências Principais (ex: João 3:16)" class="w-full">
-                    <textarea id="sermon-content" rows="12" placeholder="Digite aqui o esboço do seu sermão..." class="w-full resize-y" required></textarea>
-                    <div class="flex justify-end pt-2">
-                        <button type="submit" class="btn-primary w-full md:w-auto">Salvar Sermão</button>
-                    </div>
-                </form>
+            <div class="flex items-center gap-2">
+              <button id="deleteBtn" class="hidden bg-red-600/80 hover:bg-red-600 text-white font-semibold px-3 py-1 rounded-lg text-xs transition active:scale-95 flex items-center gap-1">
+                🗑️ Excluir
+              </button>
+              <button id="pulpitModeBtn" class="bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-1 rounded-lg text-xs font-semibold transition flex items-center gap-1">
+                📖 Modo Púlpito
+              </button>
+              <button id="saveBtn" class="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-4 py-1 rounded-lg text-xs transition active:scale-95">
+                Salvar
+              </button>
             </div>
+          </div>
 
-            <!-- BÍBLIA & LISTA -->
-            <div class="space-y-6">
-                <div class="bg-slate-800/80 border border-slate-700 p-4 md:p-6 rounded-xl space-y-4">
-                    <div class="flex items-center space-x-2">
-                        <span class="text-xl">📖</span>
-                        <h2 class="text-lg font-semibold text-white">Bíblia Sagrada</h2>
-                    </div>
-                    <div class="space-y-3">
-                        <div>
-                            <label class="text-xs font-semibold text-slate-400 block mb-1">BUSCA RÁPIDA:</label>
-                            <div class="flex space-x-2">
-                                <input type="text" id="bible-search-input" placeholder="ex: joao 3:16" class="flex-1">
-                                <button type="button" id="search-bible-btn" class="btn-primary px-4">Buscar</button>
-                            </div>
-                        </div>
-                        <div id="bible-loading-msg" class="text-xs text-amber-400 text-center min-h-[1.25rem]"></div>
-                    </div>
-                </div>
-
-                <div class="bg-slate-800/80 border border-slate-700 p-4 md:p-6 rounded-xl space-y-4">
-                    <h2 class="text-lg font-semibold text-white">Meus Sermões</h2>
-                    <div id="sermons-list" class="space-y-3 max-h-[400px] overflow-y-auto pr-1"></div>
-                </div>
-            </div>
-
+          <!-- Editor Rich Text -->
+          <div id="sermonContent" contenteditable="true" class="min-h-[380px] bg-slate-800/50 border border-slate-700/80 rounded-xl p-4 md:p-6 text-slate-200 focus:outline-none focus:border-amber-500/50 leading-relaxed text-sm">
+            Digite aqui o esboço do seu sermão...
+          </div>
         </div>
-    </main>
+      </main>
 
-    <!-- SCRIPT FIREBASE INTEGRADO -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, collection, addDoc, getDocs, query, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+      <!-- CONSULTA BÍBLICA -->
+      <aside class="w-full md:w-80 bg-slate-800/40 border-l border-slate-700/80 p-4 flex flex-col h-auto md:h-full overflow-y-auto">
+        <div class="bg-slate-800/80 p-4 rounded-xl border border-slate-700/50 mb-4 space-y-3">
+          <h3 class="font-bold text-slate-200 text-sm flex items-center gap-2">
+            <span>📖</span> Bíblia Sagrada
+          </h3>
+          
+          <div>
+            <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">Tradução:</label>
+            <select id="bibleVersion" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500">
+              <option value="nvi">NVI - Nova Versão Internacional</option>
+              <option value="acf">Almeida Corrigida Fiel (ACF)</option>
+              <option value="kjv">King James Version (KJV)</option>
+            </select>
+          </div>
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyCbO420ovZakAyEHnabb9PpMo6G-UnfAcc",
-            authDomain: "sermoncloud-3cef2.firebaseapp.com",
-            projectId: "sermoncloud-3cef2",
-            storageBucket: "sermoncloud-3cef2.firebasestorage.app",
-            messagingSenderId: "1039977716746",
-            appId: "1:1039977716746:web:11cafebe0158823f1653f3"
-        };
+          <div class="flex border-b border-slate-700 text-xs">
+            <button id="tabBrowseBtn" class="flex-1 py-1.5 font-bold border-b-2 border-amber-500 text-amber-400">Navegar</button>
+            <button id="tabSearchBtn" class="flex-1 py-1.5 text-slate-400 hover:text-slate-200 font-semibold">Pesquisar</button>
+          </div>
 
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const provider = new GoogleAuthProvider();
-        let currentUser = null;
+          <div id="browseContainer" class="space-y-2">
+            <label class="block text-[10px] uppercase font-bold text-slate-400">Selecione o Livro:</label>
+            <select id="bibleBookSelect" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500">
+              <option value="">Carregando livros...</option>
+            </select>
 
-        // LOGIN COM GOOGLE
-        document.getElementById('login-btn').addEventListener('click', async () => {
-            try {
-                await signInWithPopup(auth, provider);
-            } catch (error) {
-                console.error("Erro no login:", error);
-                alert("Erro ao autenticar: " + error.message);
-            }
-        });
+            <div id="chapterContainer" class="hidden space-y-1">
+              <label class="block text-[10px] uppercase font-bold text-slate-400">Capítulo:</label>
+              <div id="chapterGrid" class="grid grid-cols-5 gap-1 max-h-32 overflow-y-auto p-1 bg-slate-900/50 rounded border border-slate-800"></div>
+            </div>
 
-        document.getElementById('logout-btn').addEventListener('click', () => {
-            signOut(auth);
-        });
+            <div id="verseContainer" class="hidden space-y-1">
+              <label class="block text-[10px] uppercase font-bold text-slate-400">Versículo:</label>
+              <div id="verseGrid" class="grid grid-cols-5 gap-1 max-h-32 overflow-y-auto p-1 bg-slate-900/50 rounded border border-slate-800"></div>
+            </div>
+          </div>
 
-        onAuthStateChanged(auth, (user) => {
-            currentUser = user;
-            const authSection = document.getElementById('auth-section');
-            const mainApp = document.getElementById('main-app');
-            const userProfile = document.getElementById('user-profile');
-            const logoutBtn = document.getElementById('logout-btn');
+          <div id="searchContainer" class="hidden space-y-2">
+            <label class="block text-[10px] uppercase font-bold text-slate-400">Busca Rápida:</label>
+            <div class="flex gap-2">
+              <input type="text" id="bibleSearchInput" placeholder="Ex: João 3:16 ou Salmos 23" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500">
+              <button id="searchBibleBtn" class="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-3 py-1.5 rounded-lg text-xs transition">Buscar</button>
+            </div>
+          </div>
 
-            if (user) {
-                authSection.classList.add('hidden');
-                mainApp.classList.remove('hidden');
-                logoutBtn.classList.remove('hidden');
-                userProfile.innerHTML = `
-                    <img src="${user.photoURL}" class="w-8 h-8 rounded-full border border-slate-600">
-                    <span class="text-sm font-medium text-slate-200">${user.displayName}</span>
-                `;
-                loadSermons();
-            } else {
-                authSection.classList.remove('hidden');
-                mainApp.classList.add('hidden');
-                logoutBtn.classList.add('hidden');
-                userProfile.innerHTML = '';
-            }
-        });
+          <div id="bibleResult" class="text-xs text-slate-300 pt-2 border-t border-slate-700/50"></div>
+        </div>
+      </aside>
+    </div>
+  </div>
 
-        // BUSCA BÍBLIA
-        document.getElementById('search-bible-btn').addEventListener('click', async () => {
-            const inputEl = document.getElementById('bible-search-input');
-            const statusEl = document.getElementById('bible-loading-msg');
-            const editorEl = document.getElementById('sermon-content');
+  <!-- MODAL PÚLPITO -->
+  <div id="pulpitModal" class="hidden fixed inset-0 bg-slate-950 z-50 flex flex-col p-8 overflow-y-auto">
+    <div class="flex items-center justify-between border-b border-slate-800 pb-4 mb-6">
+      <div>
+        <h2 id="pulpitTitle" class="text-2xl font-bold text-amber-400"></h2>
+        <p id="pulpitMeta" class="text-xs text-slate-400"></p>
+      </div>
+      <div class="flex items-center gap-3">
+        <button id="zoomOutBtn" class="bg-slate-800 px-3 py-1.5 rounded text-sm font-bold text-slate-300 hover:bg-slate-700">A-</button>
+        <button id="zoomInBtn" class="bg-slate-800 px-3 py-1.5 rounded text-sm font-bold text-slate-300 hover:bg-slate-700">A+</button>
+        <button id="closePulpitBtn" class="bg-red-500/20 text-red-400 border border-red-500/30 px-4 py-1.5 rounded text-xs font-bold hover:bg-red-500/30">Sair do Púlpito</button>
+      </div>
+    </div>
+    <div id="pulpitBody" class="flex-1 max-w-4xl mx-auto w-full leading-relaxed text-slate-100 font-serif"></div>
+  </div>
 
-            if (!inputEl.value.trim()) {
-                alert("Digite a referência (ex: joao 3:16)");
-                return;
-            }
-
-            const text = inputEl.value.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-            const match = text.match(/^(.+?)\s+(\d+)(?::(\d+))?$/);
-            if (!match) {
-                statusEl.innerText = "⚠️ Formato inválido. Ex: joao 3:16";
-                return;
-            }
-
-            const bookRaw = match[1].replace(/\s+/g, '');
-            const chapter = match[2];
-            const verse = match[3];
-
-            const bookMap = {
-                'genesis': 'gn', 'exodo': 'ex', 'levitico': 'lv', 'numeros': 'num', 'deuteronomio': 'dt',
-                'josue': 'jos', 'juizes': 'jz', 'rute': 'rt', '1samuel': '1sm', '2samuel': '2sm',
-                '1reis': '1rs', '2reis': '2rs', '1cronicas': '1cr', '2cronicas': '2cr', 'esdras': 'ezr',
-                'neemias': 'ne', 'ester': 'et', 'jo': 'job', 'salmos': 'ps', 'salmo': 'ps', 'proverbios': 'pv',
-                'eclesiastes': 'ec', 'cantares': 'ct', 'isaias': 'is', 'jeremias': 'jr', 'lamentacoes': 'lm',
-                'ezequiel': 'ez', 'daniel': 'dn', 'oseias': 'ho', 'joel': 'jl', 'amos': 'am', 'obadias': 'ob',
-                'jonas': 'jn', 'miqueias': 'mi', 'naum': 'na', 'habacuque': 'hk', 'ageu': 'hg',
-                'zacarias': 'zc', 'malaquias': 'ml', 'mateus': 'mt', 'marcos': 'mc', 'lucas': 'lk', 'joao': 'jn',
-                'atos': 'act', 'romanos': 'rm', '1corintios': '1co', '2corintios': '2co', 'galatas': 'gl',
-                'efesios': 'ep', 'filipenses': 'php', 'colossenses': 'col', '1tessalonicenses': '1ts',
-                '2tessalonicenses': '2ts', '1timoteo': '1tm', '2timoteo': '2tm', 'tito': 'tt', 'filemon': 'phm',
-                'hebreus': 'hb', 'tiago': 'jas', '1pedro': '1pe', '2pedro': '2pe', '1joao': '1jn',
-                '2joao': '2jn', '3joao': '3jn', 'judas': 'jd', 'apocalipse': 'ap'
-            };
-            const bookAbbrev = bookMap[bookRaw] || bookRaw.substring(0, 3);
-
-            statusEl.innerText = "Carregando...";
-            try {
-                let url = `https://www.abibliadigital.com.br/api/verses/acf/${bookAbbrev}/${chapter}`;
-                if (verse) url += `/${verse}`;
-
-                const res = await fetch(url);
-                if (!res.ok) throw new Error();
-                const data = await res.json();
-                statusEl.innerText = "";
-
-                let formatted = "";
-                if (verse && data.text) {
-                    formatted = `\n\n📖 ${data.book.name} ${data.chapter}:${data.number} (ACF)\n"${data.text}"\n`;
-                } else if (data.verses) {
-                    const combined = data.verses.map(v => `${v.number}. ${v.text}`).join(' ');
-                    formatted = `\n\n📖 ${data.book.name} ${data.chapter} (ACF)\n"${combined}"\n`;
-                }
-                if (editorEl && formatted) editorEl.value += formatted;
-            } catch (err) {
-                statusEl.innerText = "⚠️ Versículo não encontrado.";
-            }
-        });
-
-        // SALVAR SERMÕES
-        document.getElementById('sermon-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            if (!currentUser) return;
-
-            try {
-                await addDoc(collection(db, "sermons"), {
-                    userId: currentUser.uid,
-                    title: document.getElementById('sermon-title').value,
-                    category: document.getElementById('sermon-category').value,
-                    tags: document.getElementById('sermon-tags').value.split(',').map(t => t.trim()),
-                    references: document.getElementById('sermon-references').value,
-                    content: document.getElementById('sermon-content').value,
-                    createdAt: serverTimestamp()
-                });
-                document.getElementById('sermon-form').reset();
-                alert("Sermão salvo com sucesso!");
-                loadSermons();
-            } catch (err) {
-                alert("Erro ao salvar.");
-            }
-        });
-
-        async function loadSermons() {
-            const list = document.getElementById('sermons-list');
-            if (!currentUser || !list) return;
-            list.innerHTML = '<p class="text-slate-400 text-sm">Carregando...</p>';
-            try {
-                const q = query(collection(db, "sermons"), where("userId", "==", currentUser.uid));
-                const snapshot = await getDocs(q);
-                list.innerHTML = snapshot.empty ? '<p class="text-slate-400 text-sm">Nenhum sermão salvo.</p>' : '';
-                snapshot.forEach(doc => {
-                    const d = doc.data();
-                    list.innerHTML += `<div class="bg-slate-800 p-4 rounded-lg border border-slate-700 mb-3"><h3 class="font-bold text-amber-400">${d.title}</h3><p class="text-xs text-slate-400 mb-2">${d.category || 'Geral'}</p><p class="text-sm text-slate-300 line-clamp-2">${d.content}</p></div>`;
-                });
-            } catch (err) {
-                list.innerHTML = '<p class="text-red-400 text-sm">Erro ao carregar.</p>';
-            }
-        }
-    </script>
+  <script src="js/app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then(reg => console.log('Service Worker registrado!', reg))
+          .catch(err => console.error('Erro ao registrar Service Worker:', err));
+      });
+    }
+  </script>
 </body>
 </html>
