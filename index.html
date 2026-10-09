@@ -124,7 +124,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, collection, addDoc, getDocs, query, where, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, getDocs, query, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCbO420ovZakAyEHnabb9PpMo6G-UnfAcc",
@@ -269,7 +269,7 @@
             if (!currentUser || !list) return;
             list.innerHTML = '<p class="text-slate-400 text-sm">Carregando...</p>';
             try {
-                const q = query(collection(db, "sermons"), where("userId", "==", currentUser.uid), orderBy("createdAt", "desc"));
+                const q = query(collection(db, "sermons"), where("userId", "==", currentUser.uid));
                 const snapshot = await getDocs(q);
                 list.innerHTML = snapshot.empty ? '<p class="text-slate-400 text-sm">Nenhum sermão salvo.</p>' : '';
                 snapshot.forEach(doc => {
