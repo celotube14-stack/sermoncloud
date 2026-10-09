@@ -17,6 +17,7 @@ import {
     serverTimestamp 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
+// Configuração oficial do Firebase SermonCloud
 const firebaseConfig = {
   apiKey: "AIzaSyCbO420ovZakAyEHnabb9PpMo6G-UnfAcc",
   authDomain: "sermoncloud-3cef2.firebaseapp.com",
@@ -34,41 +35,41 @@ const provider = new GoogleAuthProvider();
 let currentUser = null;
 
 // ==========================================
-// 1. AUTENTICAÇÃO COM GOOGLE (FORÇADA NO DOM)
+// 1. AUTENTICAÇÃO COM GOOGLE
 // ==========================================
 
-window.addEventListener('DOMContentLoaded', () => {
-    const loginBtn = document.getElementById('login-btn');
-    const logoutBtn = document.getElementById('logout-btn');
+const loginBtn = document.getElementById('login-btn');
+const logoutBtn = document.getElementById('logout-btn');
 
-    if (loginBtn) {
-        loginBtn.onclick = async () => {
-            try {
-                console.log("A tentar iniciar sessão com o Google...");
-                await signInWithPopup(auth, provider);
-            } catch (error) {
-                console.error("Erro detalhado no login:", error);
-                alert("Erro ao autenticar: " + error.message);
-            }
-        };
-    }
+if (loginBtn) {
+    loginBtn.addEventListener('click', async () => {
+        try {
+            await signInWithPopup(auth, provider);
+        } catch (error) {
+            console.error("Erro no login:", error);
+            alert("Erro ao entrar com Google: " + error.message);
+        }
+    });
+}
 
-    if (logoutBtn) {
-        logoutBtn.onclick = () => signOut(auth);
-    }
-});
+if (logoutBtn) {
+    logoutBtn.addEventListener('click', () => {
+        signOut(auth).catch((error) => console.error("Erro ao sair:", error));
+    });
+}
 
 onAuthStateChanged(auth, (user) => {
     currentUser = user;
     const authSection = document.getElementById('auth-section');
     const mainApp = document.getElementById('main-app');
     const userProfile = document.getElementById('user-profile');
-    const logoutBtn = document.getElementById('logout-btn');
+    const logoutControl = document.getElementById('logout-btn');
 
     if (user) {
         if (authSection) authSection.classList.add('hidden');
         if (mainApp) mainApp.classList.remove('hidden');
-        if (logoutBtn) logoutBtn.classList.remove('hidden');
+        if (logoutControl) logoutControl.classList.remove('hidden');
+        
         if (userProfile) {
             userProfile.innerHTML = `
                 <img src="${user.photoURL}" class="w-8 h-8 rounded-full border border-slate-600">
@@ -79,13 +80,13 @@ onAuthStateChanged(auth, (user) => {
     } else {
         if (authSection) authSection.classList.remove('hidden');
         if (mainApp) mainApp.classList.add('hidden');
-        if (logoutBtn) logoutBtn.classList.add('hidden');
+        if (logoutControl) logoutControl.classList.add('hidden');
         if (userProfile) userProfile.innerHTML = '';
     }
 });
 
 // ==========================================
-// 2. BUSCA DA BÍBLIA (ABÍBLIADIGITAL)
+// 2. BUSCA DA BÍBLIA EM PORTUGUÊS (ABÍBLIADIGITAL)
 // ==========================================
 
 function parseBibleReference(reference) {
@@ -104,7 +105,7 @@ function parseBibleReference(reference) {
         'neemias': 'ne', 'ester': 'et', 'jo': 'job', 'salmos': 'ps', 'salmo': 'ps', 'proverbios': 'pv',
         'eclesiastes': 'ec', 'cantares': 'ct', 'isaias': 'is', 'jeremias': 'jr', 'lamentacoes': 'lm',
         'ezequiel': 'ez', 'daniel': 'dn', 'oseias': 'ho', 'joel': 'jl', 'amos': 'am', 'obadias': 'ob',
-        'jonas': 'jn', 'miqueias': 'mi', 'naum': 'na', 'habacuque': 'hk', 'sofoniantes': 'zp', 'ageu': 'hg',
+        'jonas': 'jn', 'miqueias': 'mi', 'naum': 'na', 'habacuque': 'hk', 'ageu': 'hg',
         'zacarias': 'zc', 'malaquias': 'ml', 'mateus': 'mt', 'marcos': 'mc', 'lucas': 'lk', 'joao': 'jn',
         'atos': 'act', 'romanos': 'rm', '1corintios': '1co', '2corintios': '2co', 'galatas': 'gl',
         'efesios': 'ep', 'filipenses': 'php', 'colossenses': 'col', '1tessalonicenses': '1ts',
@@ -117,11 +118,10 @@ function parseBibleReference(reference) {
     return { book: bookAbbrev, chapter, verse };
 }
 
-document.addEventListener('click', async (e) => {
-    if (e.target && (e.target.id === 'search-bible-btn' || e.target.innerText.trim().toLowerCase() === 'buscar')) {
-        e.preventDefault();
-
-        const inputEl = document.getElementById('bible-search-input') || document.querySelector('input[placeholder*="joao"]');
+const searchBibleBtn = document.getElementById('search-bible-btn');
+if (searchBibleBtn) {
+    searchBibleBtn.addEventListener('click', async () => {
+        const inputEl = document.getElementById('bible-search-input');
         const statusEl = document.getElementById('bible-loading-msg');
         const editorEl = document.getElementById('sermon-content');
 
@@ -132,12 +132,12 @@ document.addEventListener('click', async (e) => {
 
         const parsed = parseBibleReference(inputEl.value);
         if (!parsed) {
-            if (statusEl) statusEl.innerText = "⚠️ Formato inválido. Exemplo: joao 3:16";
+            if (statusEl) statusEl.innerText = "⚠️ Formato inválido. Ex: joao 3:16";
             return;
         }
 
         if (statusEl) statusEl.innerText = "Carregando versículo...";
-        e.target.disabled = true;
+        searchBibleBtn.disabled = true;
 
         try {
             let url = `https://www.abibliadigital.com.br/api/verses/acf/${parsed.book}/${parsed.chapter}`;
@@ -146,7 +146,7 @@ document.addEventListener('click', async (e) => {
             }
 
             const response = await fetch(url);
-            if (!response.ok) throw new Error("Não encontrado");
+            if (!response.ok) throw new Error("Versículo não encontrado");
 
             const data = await response.json();
             if (statusEl) statusEl.innerText = "";
@@ -167,15 +167,15 @@ document.addEventListener('click', async (e) => {
 
         } catch (err) {
             console.error(err);
-            if (statusEl) statusEl.innerText = "⚠️ Versículo não encontrado.";
+            if (statusEl) statusEl.innerText = "⚠️ Erro ao buscar versículo. Verifique a referência.";
         } finally {
-            e.target.disabled = false;
+            searchBibleBtn.disabled = false;
         }
-    }
-});
+    });
+}
 
 // ==========================================
-// 3. GRAVAÇÃO E CARREGAMENTO DE SERMÕES
+// 3. GESTÃO DE SERMÕES (FIRESTORE)
 // ==========================================
 
 const sermonForm = document.getElementById('sermon-form');
