@@ -35,92 +35,42 @@ const provider = new GoogleAuthProvider();
 let currentUser = null;
 
 // ==========================================
-// 1. AUTENTICAÇÃO COM GOOGLE
+// DELEGAÇÃO DE EVENTOS GLOBAL (CLIQUE BLINDADO)
 // ==========================================
+document.addEventListener('click', async (e) => {
+    const target = e.target.closest('button, #login-btn, #logout-btn, #search-bible-btn');
+    if (!target) return;
 
-const loginBtn = document.getElementById('login-btn');
-const logoutBtn = document.getElementById('logout-btn');
+    const id = target.id || '';
+    const text = target.innerText ? target.innerText.trim().toLowerCase() : '';
 
-if (loginBtn) {
-    loginBtn.addEventListener('click', async () => {
+    // 1. BOTÃO DE LOGIN
+    if (id === 'login-btn' || text.includes('entrar com conta google')) {
+        e.preventDefault();
         try {
             await signInWithPopup(auth, provider);
         } catch (error) {
             console.error("Erro no login:", error);
-            alert("Erro ao entrar com Google: " + error.message);
+            alert("Erro ao autenticar: " + error.message);
         }
-    });
-}
-
-if (logoutBtn) {
-    logoutBtn.addEventListener('click', () => {
-        signOut(auth).catch((error) => console.error("Erro ao sair:", error));
-    });
-}
-
-onAuthStateChanged(auth, (user) => {
-    currentUser = user;
-    const authSection = document.getElementById('auth-section');
-    const mainApp = document.getElementById('main-app');
-    const userProfile = document.getElementById('user-profile');
-    const logoutControl = document.getElementById('logout-btn');
-
-    if (user) {
-        if (authSection) authSection.classList.add('hidden');
-        if (mainApp) mainApp.classList.remove('hidden');
-        if (logoutControl) logoutControl.classList.remove('hidden');
-        
-        if (userProfile) {
-            userProfile.innerHTML = `
-                <img src="${user.photoURL}" class="w-8 h-8 rounded-full border border-slate-600">
-                <span class="text-sm font-medium text-slate-200">${user.displayName}</span>
-            `;
-        }
-        loadSermons();
-    } else {
-        if (authSection) authSection.classList.remove('hidden');
-        if (mainApp) mainApp.classList.add('hidden');
-        if (logoutControl) logoutControl.classList.add('hidden');
-        if (userProfile) userProfile.innerHTML = '';
+        return;
     }
-});
 
-// ==========================================
-// 2. BUSCA DA BÍBLIA EM PORTUGUÊS (ABÍBLIADIGITAL)
-// ==========================================
+    // 2. BOTÃO DE LOGOUT
+    if (id === 'logout-btn' || text === 'sair') {
+        e.preventDefault();
+        try {
+            await signOut(auth);
+        } catch (error) {
+            console.error("Erro ao sair:", error);
+        }
+        return;
+    }
 
-function parseBibleReference(reference) {
-    const text = reference.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-    const match = text.match(/^(.+?)\s+(\d+)(?::(\d+))?$/);
-    if (!match) return null;
+    // 3. BOTÃO DE BUSCA DA BÍBLIA
+    if (id === 'search-bible-btn' || text === 'buscar') {
+        e.preventDefault();
 
-    const bookRaw = match[1].replace(/\s+/g, '');
-    const chapter = match[2];
-    const verse = match[3];
-
-    const bookMap = {
-        'genesis': 'gn', 'exodo': 'ex', 'levitico': 'lv', 'numeros': 'num', 'deuteronomio': 'dt',
-        'josue': 'jos', 'juizes': 'jz', 'rute': 'rt', '1samuel': '1sm', '2samuel': '2sm',
-        '1reis': '1rs', '2reis': '2rs', '1cronicas': '1cr', '2cronicas': '2cr', 'esdras': 'ezr',
-        'neemias': 'ne', 'ester': 'et', 'jo': 'job', 'salmos': 'ps', 'salmo': 'ps', 'proverbios': 'pv',
-        'eclesiastes': 'ec', 'cantares': 'ct', 'isaias': 'is', 'jeremias': 'jr', 'lamentacoes': 'lm',
-        'ezequiel': 'ez', 'daniel': 'dn', 'oseias': 'ho', 'joel': 'jl', 'amos': 'am', 'obadias': 'ob',
-        'jonas': 'jn', 'miqueias': 'mi', 'naum': 'na', 'habacuque': 'hk', 'ageu': 'hg',
-        'zacarias': 'zc', 'malaquias': 'ml', 'mateus': 'mt', 'marcos': 'mc', 'lucas': 'lk', 'joao': 'jn',
-        'atos': 'act', 'romanos': 'rm', '1corintios': '1co', '2corintios': '2co', 'galatas': 'gl',
-        'efesios': 'ep', 'filipenses': 'php', 'colossenses': 'col', '1tessalonicenses': '1ts',
-        '2tessalonicenses': '2ts', '1timoteo': '1tm', '2timoteo': '2tm', 'tito': 'tt', 'filemon': 'phm',
-        'hebreus': 'hb', 'tiago': 'jas', '1pedro': '1pe', '2pedro': '2pe', '1joao': '1jn',
-        '2joao': '2jn', '3joao': '3jn', 'judas': 'jd', 'apocalipse': 'ap'
-    };
-
-    const bookAbbrev = bookMap[bookRaw] || bookRaw.substring(0, 3);
-    return { book: bookAbbrev, chapter, verse };
-}
-
-const searchBibleBtn = document.getElementById('search-bible-btn');
-if (searchBibleBtn) {
-    searchBibleBtn.addEventListener('click', async () => {
         const inputEl = document.getElementById('bible-search-input');
         const statusEl = document.getElementById('bible-loading-msg');
         const editorEl = document.getElementById('sermon-content');
@@ -137,7 +87,7 @@ if (searchBibleBtn) {
         }
 
         if (statusEl) statusEl.innerText = "Carregando versículo...";
-        searchBibleBtn.disabled = true;
+        target.disabled = true;
 
         try {
             let url = `https://www.abibliadigital.com.br/api/verses/acf/${parsed.book}/${parsed.chapter}`;
@@ -167,17 +117,79 @@ if (searchBibleBtn) {
 
         } catch (err) {
             console.error(err);
-            if (statusEl) statusEl.innerText = "⚠️ Erro ao buscar versículo. Verifique a referência.";
+            if (statusEl) statusEl.innerText = "⚠️ Erro ao buscar versículo.";
         } finally {
-            searchBibleBtn.disabled = false;
+            target.disabled = false;
         }
-    });
+        return;
+    }
+});
+
+// ==========================================
+// PARSER DA BÍBLIA
+// ==========================================
+function parseBibleReference(reference) {
+    const text = reference.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    const match = text.match(/^(.+?)\s+(\d+)(?::(\d+))?$/);
+    if (!match) return null;
+
+    const bookRaw = match[1].replace(/\s+/g, '');
+    const chapter = match[2];
+    const verse = match[3];
+
+    const bookMap = {
+        'genesis': 'gn', 'exodo': 'ex', 'levitico': 'lv', 'numeros': 'num', 'deuteronomio': 'dt',
+        'josue': 'jos', 'juizes': 'jz', 'rute': 'rt', '1samuel': '1sm', '2samuel': '2sm',
+        '1reis': '1rs', '2reis': '2rs', '1cronicas': '1cr', '2cronicas': '2cr', 'esdras': 'ezr',
+        'neemias': 'ne', 'ester': 'et', 'jo': 'job', 'salmos': 'ps', 'salmo': 'ps', 'proverbios': 'pv',
+        'eclesiastes': 'ec', 'cantares': 'ct', 'isaias': 'is', 'jeremias': 'jr', 'lamentacoes': 'lm',
+        'ezequiel': 'ez', 'daniel': 'dn', 'oseias': 'ho', 'joel': 'jl', 'amos': 'am', 'obadias': 'ob',
+        'jonas': 'jn', 'miqueias': 'mi', 'naum': 'na', 'habacuque': 'hk', 'ageu': 'hg',
+        'zacarias': 'zc', 'malaquias': 'ml', 'mateus': 'mt', 'marcos': 'mc', 'lucas': 'lk', 'joao': 'jn',
+        'atos': 'act', 'romanos': 'rm', '1corintios': '1co', '2corintios': '2co', 'galatas': 'gl',
+        'efesios': 'ep', 'filipenses': 'php', 'colossenses': 'col', '1tessalonicenses': '1ts',
+        '2tessalonicenses': '2ts', '1timoteo': '1tm', '2timoteo': '2tm', 'tito': 'tt', 'filemon': 'phm',
+        'hebreus': 'hb', 'tiago': 'jas', '1pedro': '1pe', '2pedro': '2pe', '1joao': '1jn',
+        '2joao': '2jn', '3joao': '3jn', 'judas': 'jd', 'apocalipse': 'ap'
+    };
+
+    const bookAbbrev = bookMap[bookRaw] || bookRaw.substring(0, 3);
+    return { book: bookAbbrev, chapter, verse };
 }
 
 // ==========================================
-// 3. GESTÃO DE SERMÕES (FIRESTORE)
+// MONITOR DE ESTADO DA AUTENTICAÇÃO
 // ==========================================
+onAuthStateChanged(auth, (user) => {
+    currentUser = user;
+    const authSection = document.getElementById('auth-section');
+    const mainApp = document.getElementById('main-app');
+    const userProfile = document.getElementById('user-profile');
+    const logoutControl = document.getElementById('logout-btn');
 
+    if (user) {
+        if (authSection) authSection.classList.add('hidden');
+        if (mainApp) mainApp.classList.remove('hidden');
+        if (logoutControl) logoutControl.classList.remove('hidden');
+        
+        if (userProfile) {
+            userProfile.innerHTML = `
+                <img src="${user.photoURL}" class="w-8 h-8 rounded-full border border-slate-600">
+                <span class="text-sm font-medium text-slate-200">${user.displayName}</span>
+            `;
+        }
+        loadSermons();
+    } else {
+        if (authSection) authSection.classList.remove('hidden');
+        if (mainApp) mainApp.classList.add('hidden');
+        if (logoutControl) logoutControl.classList.add('hidden');
+        if (userProfile) userProfile.innerHTML = '';
+    }
+});
+
+// ==========================================
+// GESTÃO DE SERMÕES (FIRESTORE)
+// ==========================================
 const sermonForm = document.getElementById('sermon-form');
 if (sermonForm) {
     sermonForm.addEventListener('submit', async (e) => {
