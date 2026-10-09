@@ -7,97 +7,59 @@
     <link rel="manifest" href="manifest.json">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Estilização Customizada e Ajustes Mobile */
         body {
             background-color: #0f172a;
             color: #f8fafc;
             font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
         }
-
-        /* Ajustes de toque e inputs para mobile */
-        input[type="text"], input[type="url"], select, textarea {
-            font-size: 16px !important; /* Impede zoom automático no iOS */
+        input, select, textarea {
+            font-size: 16px !important;
             background-color: #1e293b !important;
             border: 1px solid #334155 !important;
             color: #f8fafc !important;
             border-radius: 0.5rem;
             padding: 0.75rem 1rem;
         }
-
         input::placeholder, textarea::placeholder {
             color: #94a3b8 !important;
-            opacity: 1;
         }
-
-        input:focus, select:focus, textarea:focus {
-            outline: none !important;
-            border-color: #f59e0b !important;
-            box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2) !important;
-        }
-
-        /* Botões padronizados */
         .btn-primary {
             background-color: #f59e0b;
             color: #0f172a;
             font-weight: 600;
             padding: 0.75rem 1.25rem;
             border-radius: 0.5rem;
-            transition: background-color 0.2s;
+            cursor: pointer;
         }
-
         .btn-primary:hover {
             background-color: #d97706;
-        }
-
-        .btn-secondary {
-            background-color: #334155;
-            color: #f8fafc;
-            font-weight: 500;
-            padding: 0.75rem 1rem;
-            border-radius: 0.5rem;
-        }
-
-        .btn-secondary:hover {
-            background-color: #475569;
-        }
-
-        /* Scrollbar suave no editor */
-        textarea::-webkit-scrollbar {
-            width: 8px;
-        }
-        textarea::-webkit-scrollbar-thumb {
-            background: #334155;
-            border-radius: 4px;
         }
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
 
-    <!-- CABEÇALHO DA APLICAÇÃO -->
+    <!-- CABEÇALHO -->
     <header class="bg-slate-900 border-b border-slate-800 px-4 py-3 sticky top-0 z-50">
         <div class="max-w-6xl mx-auto flex justify-between items-center">
             <div class="flex items-center space-x-3">
                 <span class="text-2xl">📖</span>
-                <h1 class="text-xl font-bold text-amber-500 tracking-wide">SermonCloud</h1>
+                <h1 class="text-xl font-bold text-amber-500">SermonCloud</h1>
             </div>
-            
-            <div id="user-profile" class="flex items-center space-x-3">
-                <!-- Perfil do Usuário / Botão Sair via JS -->
-            </div>
+            <div id="user-profile" class="flex items-center space-x-3"></div>
             <button id="logout-btn" class="text-xs text-slate-400 hover:text-white ml-2 hidden">Sair</button>
         </div>
     </header>
 
-    <!-- ÁREA DE AUTENTICAÇÃO (TELA DE LOGIN) -->
+    <!-- TELA DE LOGIN -->
     <section id="auth-section" class="flex-1 flex items-center justify-center p-4">
         <div class="bg-slate-800 border border-slate-700 p-8 rounded-xl shadow-2xl max-w-sm w-full text-center">
             <div class="bg-amber-500/10 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span class="text-3xl">📖</span>
             </div>
             <h2 class="text-2xl font-bold text-white mb-2">SermonCloud</h2>
-            <p class="text-slate-400 text-sm mb-6">Plataforma de criação de sermões para equipes ministeriais.</p>
+            <p class="text-slate-400 text-sm mb-6">Plataforma de criação de sermões.</p>
             
-            <button id="login-btn" class="w-full bg-white text-slate-900 font-semibold py-3 px-4 rounded-lg flex items-center justify-center space-x-3 hover:bg-slate-100 transition shadow-md">
+            <button id="login-btn" type="button" class="w-full bg-white text-slate-900 font-semibold py-3 px-4 rounded-lg flex items-center justify-center space-x-3 hover:bg-slate-100 transition shadow-md cursor-pointer">
                 <svg class="w-5 h-5" viewBox="0 0 24 24">
                     <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                     <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
@@ -109,5 +71,215 @@
         </div>
     </section>
 
-    <!-- CONTEÚDO PRINCIPAL (EXIBIDO APÓS AUTENTICAÇÃO) -->
-    <main id="main-app" class="flex-1 max-w-6xl w
+    <!-- APLICAÇÃO PRINCIPAL -->
+    <main id="main-app" class="flex-1 max-w-6xl w-full mx-auto p-4 md:p-6 hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- EDITOR -->
+            <div class="lg:col-span-2 space-y-6">
+                <form id="sermon-form" class="bg-slate-800/80 border border-slate-700 p-4 md:p-6 rounded-xl space-y-4">
+                    <h2 class="text-lg font-semibold text-amber-400">Criar / Editar Sermão</h2>
+                    <input type="text" id="sermon-title" placeholder="Título do Sermão..." class="w-full" required>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <input type="text" id="sermon-category" placeholder="Categoria (ex: Fé, Família)" class="w-full">
+                        <input type="text" id="sermon-tags" placeholder="Marcadores (separados por vírgula)" class="w-full">
+                    </div>
+                    <input type="text" id="sermon-references" placeholder="Referências Principais (ex: João 3:16)" class="w-full">
+                    <textarea id="sermon-content" rows="12" placeholder="Digite aqui o esboço do seu sermão..." class="w-full resize-y" required></textarea>
+                    <div class="flex justify-end pt-2">
+                        <button type="submit" class="btn-primary w-full md:w-auto">Salvar Sermão</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- BÍBLIA & LISTA -->
+            <div class="space-y-6">
+                <div class="bg-slate-800/80 border border-slate-700 p-4 md:p-6 rounded-xl space-y-4">
+                    <div class="flex items-center space-x-2">
+                        <span class="text-xl">📖</span>
+                        <h2 class="text-lg font-semibold text-white">Bíblia Sagrada</h2>
+                    </div>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="text-xs font-semibold text-slate-400 block mb-1">BUSCA RÁPIDA:</label>
+                            <div class="flex space-x-2">
+                                <input type="text" id="bible-search-input" placeholder="ex: joao 3:16" class="flex-1">
+                                <button type="button" id="search-bible-btn" class="btn-primary px-4">Buscar</button>
+                            </div>
+                        </div>
+                        <div id="bible-loading-msg" class="text-xs text-amber-400 text-center min-h-[1.25rem]"></div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-800/80 border border-slate-700 p-4 md:p-6 rounded-xl space-y-4">
+                    <h2 class="text-lg font-semibold text-white">Meus Sermões</h2>
+                    <div id="sermons-list" class="space-y-3 max-h-[400px] overflow-y-auto pr-1"></div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- SCRIPT FIREBASE INTEGRADO -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, collection, addDoc, getDocs, query, where, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCbO420ovZakAyEHnabb9PpMo6G-UnfAcc",
+            authDomain: "sermoncloud-3cef2.firebaseapp.com",
+            projectId: "sermoncloud-3cef2",
+            storageBucket: "sermoncloud-3cef2.firebasestorage.app",
+            messagingSenderId: "1039977716746",
+            appId: "1:1039977716746:web:11cafebe0158823f1653f3"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const provider = new GoogleAuthProvider();
+        let currentUser = null;
+
+        // LOGIN COM GOOGLE
+        document.getElementById('login-btn').addEventListener('click', async () => {
+            try {
+                await signInWithPopup(auth, provider);
+            } catch (error) {
+                console.error("Erro no login:", error);
+                alert("Erro ao autenticar: " + error.message);
+            }
+        });
+
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            signOut(auth);
+        });
+
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user;
+            const authSection = document.getElementById('auth-section');
+            const mainApp = document.getElementById('main-app');
+            const userProfile = document.getElementById('user-profile');
+            const logoutBtn = document.getElementById('logout-btn');
+
+            if (user) {
+                authSection.classList.add('hidden');
+                mainApp.classList.remove('hidden');
+                logoutBtn.classList.remove('hidden');
+                userProfile.innerHTML = `
+                    <img src="${user.photoURL}" class="w-8 h-8 rounded-full border border-slate-600">
+                    <span class="text-sm font-medium text-slate-200">${user.displayName}</span>
+                `;
+                loadSermons();
+            } else {
+                authSection.classList.remove('hidden');
+                mainApp.classList.add('hidden');
+                logoutBtn.classList.add('hidden');
+                userProfile.innerHTML = '';
+            }
+        });
+
+        // BUSCA BÍBLIA
+        document.getElementById('search-bible-btn').addEventListener('click', async () => {
+            const inputEl = document.getElementById('bible-search-input');
+            const statusEl = document.getElementById('bible-loading-msg');
+            const editorEl = document.getElementById('sermon-content');
+
+            if (!inputEl.value.trim()) {
+                alert("Digite a referência (ex: joao 3:16)");
+                return;
+            }
+
+            const text = inputEl.value.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            const match = text.match(/^(.+?)\s+(\d+)(?::(\d+))?$/);
+            if (!match) {
+                statusEl.innerText = "⚠️ Formato inválido. Ex: joao 3:16";
+                return;
+            }
+
+            const bookRaw = match[1].replace(/\s+/g, '');
+            const chapter = match[2];
+            const verse = match[3];
+
+            const bookMap = {
+                'genesis': 'gn', 'exodo': 'ex', 'levitico': 'lv', 'numeros': 'num', 'deuteronomio': 'dt',
+                'josue': 'jos', 'juizes': 'jz', 'rute': 'rt', '1samuel': '1sm', '2samuel': '2sm',
+                '1reis': '1rs', '2reis': '2rs', '1cronicas': '1cr', '2cronicas': '2cr', 'esdras': 'ezr',
+                'neemias': 'ne', 'ester': 'et', 'jo': 'job', 'salmos': 'ps', 'salmo': 'ps', 'proverbios': 'pv',
+                'eclesiastes': 'ec', 'cantares': 'ct', 'isaias': 'is', 'jeremias': 'jr', 'lamentacoes': 'lm',
+                'ezequiel': 'ez', 'daniel': 'dn', 'oseias': 'ho', 'joel': 'jl', 'amos': 'am', 'obadias': 'ob',
+                'jonas': 'jn', 'miqueias': 'mi', 'naum': 'na', 'habacuque': 'hk', 'ageu': 'hg',
+                'zacarias': 'zc', 'malaquias': 'ml', 'mateus': 'mt', 'marcos': 'mc', 'lucas': 'lk', 'joao': 'jn',
+                'atos': 'act', 'romanos': 'rm', '1corintios': '1co', '2corintios': '2co', 'galatas': 'gl',
+                'efesios': 'ep', 'filipenses': 'php', 'colossenses': 'col', '1tessalonicenses': '1ts',
+                '2tessalonicenses': '2ts', '1timoteo': '1tm', '2timoteo': '2tm', 'tito': 'tt', 'filemon': 'phm',
+                'hebreus': 'hb', 'tiago': 'jas', '1pedro': '1pe', '2pedro': '2pe', '1joao': '1jn',
+                '2joao': '2jn', '3joao': '3jn', 'judas': 'jd', 'apocalipse': 'ap'
+            };
+            const bookAbbrev = bookMap[bookRaw] || bookRaw.substring(0, 3);
+
+            statusEl.innerText = "Carregando...";
+            try {
+                let url = `https://www.abibliadigital.com.br/api/verses/acf/${bookAbbrev}/${chapter}`;
+                if (verse) url += `/${verse}`;
+
+                const res = await fetch(url);
+                if (!res.ok) throw new Error();
+                const data = await res.json();
+                statusEl.innerText = "";
+
+                let formatted = "";
+                if (verse && data.text) {
+                    formatted = `\n\n📖 ${data.book.name} ${data.chapter}:${data.number} (ACF)\n"${data.text}"\n`;
+                } else if (data.verses) {
+                    const combined = data.verses.map(v => `${v.number}. ${v.text}`).join(' ');
+                    formatted = `\n\n📖 ${data.book.name} ${data.chapter} (ACF)\n"${combined}"\n`;
+                }
+                if (editorEl && formatted) editorEl.value += formatted;
+            } catch (err) {
+                statusEl.innerText = "⚠️ Versículo não encontrado.";
+            }
+        });
+
+        // SALVAR SERMÕES
+        document.getElementById('sermon-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!currentUser) return;
+
+            try {
+                await addDoc(collection(db, "sermons"), {
+                    userId: currentUser.uid,
+                    title: document.getElementById('sermon-title').value,
+                    category: document.getElementById('sermon-category').value,
+                    tags: document.getElementById('sermon-tags').value.split(',').map(t => t.trim()),
+                    references: document.getElementById('sermon-references').value,
+                    content: document.getElementById('sermon-content').value,
+                    createdAt: serverTimestamp()
+                });
+                document.getElementById('sermon-form').reset();
+                alert("Sermão salvo com sucesso!");
+                loadSermons();
+            } catch (err) {
+                alert("Erro ao salvar.");
+            }
+        });
+
+        async function loadSermons() {
+            const list = document.getElementById('sermons-list');
+            if (!currentUser || !list) return;
+            list.innerHTML = '<p class="text-slate-400 text-sm">Carregando...</p>';
+            try {
+                const q = query(collection(db, "sermons"), where("userId", "==", currentUser.uid), orderBy("createdAt", "desc"));
+                const snapshot = await getDocs(q);
+                list.innerHTML = snapshot.empty ? '<p class="text-slate-400 text-sm">Nenhum sermão salvo.</p>' : '';
+                snapshot.forEach(doc => {
+                    const d = doc.data();
+                    list.innerHTML += `<div class="bg-slate-800 p-4 rounded-lg border border-slate-700 mb-3"><h3 class="font-bold text-amber-400">${d.title}</h3><p class="text-xs text-slate-400 mb-2">${d.category || 'Geral'}</p><p class="text-sm text-slate-300 line-clamp-2">${d.content}</p></div>`;
+                });
+            } catch (err) {
+                list.innerHTML = '<p class="text-red-400 text-sm">Erro ao carregar.</p>';
+            }
+        }
+    </script>
+</body>
+</html>
