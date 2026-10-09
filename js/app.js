@@ -86,8 +86,41 @@ onAuthStateChanged(auth, (user) => {
 });
 
 // ==========================================
-// 2. BUSCA DA BÍBLIA EM PORTUGUÊS
+// 2. BUSCA DA BÍBLIA EM PORTUGUÊS (ABÍBLIADIGITAL)
 // ==========================================
+
+function parseBibleReference(reference) {
+    const text = reference.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    
+    // Separa o livro, capítulo e versículo (ex: "joao 3:16" -> livro: "joao", cap: "3", ver: "16")
+    const match = text.match(/^(.+?)\s+(\d+)(?::(\d+))?$/);
+    if (!match) return null;
+
+    const bookRaw = match[1].replace(/\s+/g, '');
+    const chapter = match[2];
+    const verse = match[3];
+
+    // Mapeamento das abreviações nativas da API
+    const bookMap = {
+        'genesis': 'gn', 'exodo': 'ex', 'levitico': 'lv', 'numeros': 'num', 'deuteronomio': 'dt',
+        'josue': 'jos', 'juizes': 'jz', 'rute': 'rt', '1samuel': '1sm', '2samuel': '2sm',
+        '1reis': '1rs', '2reis': '2rs', '1cronicas': '1cr', '2cronicas': '2cr', 'esdras': 'ezr',
+        'neemias': 'ne', 'ester': 'et', 'jo': 'job', 'salmos': 'ps', 'salmo': 'ps', 'proverbios': 'pv',
+        'eclesiastes': 'ec', 'cantares': 'ct', 'isaias': 'is', 'jeremias': 'jr', 'lamentacoes': 'lm',
+        'ezequiel': 'ez', 'daniel': 'dn', 'oseias': 'ho', 'joel': 'jl', 'amos': 'am', 'obadias': 'ob',
+        'jonas': 'jn', 'miqueias': 'mi', 'naum': 'na', 'habacuque': 'hk', 'sofofnias': 'zp', 'ageu': 'hg',
+        'zacarias': 'zc', 'malaquias': 'ml', 'mateus': 'mt', 'marcos': 'mc', 'lucas': 'lk', 'joao': 'jn',
+        'atos': 'act', 'romanos': 'rm', '1corintios': '1co', '2corintios': '2co', 'galatas': 'gl',
+        'efesios': 'ep', 'filipenses': 'php', 'colossenses': 'col', '1tessalonicenses': '1ts',
+        '2tessalonicenses': '2ts', '1timoteo': '1tm', '2timoteo': '2tm', 'tito': 'tt', 'filemon': 'phm',
+        'hebreus': 'hb', 'tiago': 'jas', '1pedro': '1pe', '2pedro': '2pe', '1joao': '1jn',
+        '2joao': '2jn', '3joao': '3jn', 'judas': 'jd', 'apocalipse': 'ap'
+    };
+
+    const bookAbbrev = bookMap[bookRaw] || bookRaw.substring(0, 3);
+
+    return { book: bookAbbrev, chapter, verse };
+}
 
 document.addEventListener('click', async (e) => {
     if (e.target && (e.target.id === 'search-bible-btn' || e.target.innerText.trim().toLowerCase() === 'buscar')) {
@@ -102,82 +135,44 @@ document.addEventListener('click', async (e) => {
             return;
         }
 
-        // Limpa acentos e caracteres especiais para a busca na API
-        const cleanRef = inputEl.value.trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        const parsed = parseBibleReference(inputEl.value);
+        
+        if (!parsed) {
+            if (statusEl) statusEl.innerText = "⚠️ Formato inválido. Exemplo correto: joao 3:16";
+            return;
+        }
 
         if (statusEl) statusEl.innerText = "Carregando versículo...";
         e.target.disabled = true;
 
         try {
-            const response = await fetch(`https://bible-api.com/${encodeURIComponent(cleanRef)}?translation=almeida`);
-            
-            if (!response.ok) {
-                throw new Error("Versículo não encontrado.");
+            // Busca a versão Almeida Corrigida Fiel (acf)
+            let url = `https://www.abibliadigital.com.br/api/verses/acf/${parsed.book}/${parsed.chapter}`;
+            if (parsed.verse) {
+                url += `/${parsed.verse}`;
             }
+
+            const response = await fetch(url);
+            if (!response.ok) throw new Error("Não encontrado");
 
             const data = await response.json();
 
-            if (data && data.text) {
-                if (statusEl) statusEl.innerText = "";
-                const verseFormat = `\n\n📖 ${data.reference} (Almeida)\n"${data.text.trim()}"\n`;
-                
-                if (editorEl) {
-                    editorEl.value += verseFormat;
-                } else {
-                    alert(`${data.reference}:\n\n${data.text.trim()}`);
-                }
-            } else {
-                if (statusEl) statusEl.innerText = "⚠️ Versículo não encontrado.";
+            if (statusEl) statusEl.innerText = "";
+
+            let verseFormatted = "";
+            if (parsed.verse && data.text) {
+                verseFormatted = `\n\n📖 ${data.book.name} ${data.chapter}:${data.number} (ACF)\n"${data.text}"\n`;
+            } else if (data.verses) {
+                const textCombined = data.verses.map(v => `${v.number}. ${v.text}`).join(' ');
+                verseFormatted = `\n\n📖 ${data.book.name} ${data.chapter} (ACF)\n"${textCombined}"\n`;
             }
+
+            if (editorEl && verseFormatted) {
+                editorEl.value += verseFormatted;
+            } else if (verseFormatted) {
+                alert(verseFormatted);
+            }
+
         } catch (err) {
             console.error(err);
-            if (statusEl) statusEl.innerText = "⚠️ Referência não encontrada ou falha na rede.";
-        } finally {
-            e.target.disabled = false;
-        }
-    }
-});
-
-// ==========================================
-// 3. GRAVAÇÃO E CARREGAMENTO DE SERMÕES (FIRESTORE)
-// ==========================================
-
-const sermonForm = document.getElementById('sermon-form');
-if (sermonForm) {
-    sermonForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        if (!currentUser) return;
-
-        const title = document.getElementById('sermon-title')?.value || '';
-        const category = document.getElementById('sermon-category')?.value || '';
-        const tagsInput = document.getElementById('sermon-tags')?.value || '';
-        const tags = tagsInput ? tagsInput.split(',').map(t => t.trim()) : [];
-        const references = document.getElementById('sermon-references')?.value || '';
-        const content = document.getElementById('sermon-content')?.value || '';
-
-        try {
-            await addDoc(collection(db, "sermons"), {
-                userId: currentUser.uid,
-                title,
-                category,
-                tags,
-                references,
-                content,
-                createdAt: serverTimestamp()
-            });
-
-            sermonForm.reset();
-            alert("Sermão salvo com sucesso!");
-            loadSermons();
-        } catch (error) {
-            console.error("Erro ao salvar sermão:", error);
-            alert("Erro ao salvar o sermão.");
-        }
-    });
-}
-
-async function loadSermons() {
-    const sermonsList = document.getElementById('sermons-list');
-    if (!currentUser || !sermonsList) return;
-
-    sermonsList.innerHTML
+            if (
