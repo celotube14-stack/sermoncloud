@@ -175,4 +175,85 @@ document.addEventListener('click', async (e) => {
 
         } catch (err) {
             console.error(err);
-            if (
+            if (statusEl) statusEl.innerText = "⚠️ Versículo não encontrado. Tente ex: joao 3:16";
+        } finally {
+            e.target.disabled = false;
+        }
+    }
+});
+
+// ==========================================
+// 3. GRAVAÇÃO E CARREGAMENTO DE SERMÕES (FIRESTORE)
+// ==========================================
+
+const sermonForm = document.getElementById('sermon-form');
+if (sermonForm) {
+    sermonForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (!currentUser) return;
+
+        const title = document.getElementById('sermon-title')?.value || '';
+        const category = document.getElementById('sermon-category')?.value || '';
+        const tagsInput = document.getElementById('sermon-tags')?.value || '';
+        const tags = tagsInput ? tagsInput.split(',').map(t => t.trim()) : [];
+        const references = document.getElementById('sermon-references')?.value || '';
+        const content = document.getElementById('sermon-content')?.value || '';
+
+        try {
+            await addDoc(collection(db, "sermons"), {
+                userId: currentUser.uid,
+                title,
+                category,
+                tags,
+                references,
+                content,
+                createdAt: serverTimestamp()
+            });
+
+            sermonForm.reset();
+            alert("Sermão salvo com sucesso!");
+            loadSermons();
+        } catch (error) {
+            console.error("Erro ao salvar sermão:", error);
+            alert("Erro ao salvar o sermão.");
+        }
+    });
+}
+
+async function loadSermons() {
+    const sermonsList = document.getElementById('sermons-list');
+    if (!currentUser || !sermonsList) return;
+
+    sermonsList.innerHTML = '<p class="text-slate-400 text-sm">Carregando sermões...</p>';
+
+    try {
+        const q = query(
+            collection(db, "sermons"), 
+            where("userId", "==", currentUser.uid),
+            orderBy("createdAt", "desc")
+        );
+        
+        const querySnapshot = await getDocs(q);
+        sermonsList.innerHTML = '';
+
+        if (querySnapshot.empty) {
+            sermonsList.innerHTML = '<p class="text-slate-400 text-sm">Nenhum sermão salvo ainda.</p>';
+            return;
+        }
+
+        querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            const card = document.createElement('div');
+            card.className = "bg-slate-800 p-4 rounded-lg border border-slate-700 mb-3 shadow-sm";
+            card.innerHTML = `
+                <h3 class="font-bold text-lg text-amber-400">${data.title}</h3>
+                <p class="text-xs text-slate-400 mb-2">${data.category || 'Geral'} • ${data.references || ''}</p>
+                <p class="text-sm text-slate-300 line-clamp-2">${data.content}</p>
+            `;
+            sermonsList.appendChild(card);
+        });
+    } catch (error) {
+        console.error("Erro ao carregar sermões:", error);
+        sermonsList.innerHTML = '<p class="text-red-400 text-sm">Erro ao carregar lista de sermões.</p>';
+    }
+}
