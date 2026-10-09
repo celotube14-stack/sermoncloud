@@ -1,4 +1,3 @@
-// Importações do Firebase
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { 
     getAuth, 
@@ -18,7 +17,6 @@ import {
     serverTimestamp 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-// Configuração do Firebase
 const firebaseConfig = {
     apiKey: "AIzaSyD-SUAS_CHAVE_AQUI", 
     authDomain: "sermoncloud-3cef2.firebaseapp.com",
@@ -35,10 +33,7 @@ const provider = new GoogleAuthProvider();
 
 let currentUser = null;
 
-// ==========================================
-// 1. AUTENTICAÇÃO
-// ==========================================
-
+// AUTENTICAÇÃO
 const loginBtn = document.getElementById('login-btn');
 const logoutBtn = document.getElementById('logout-btn');
 
@@ -79,97 +74,74 @@ onAuthStateChanged(auth, (user) => {
     }
 });
 
-// ==========================================
-// 2. MÓDULO BÍBLIA SAGRADA (SISTEMA DE BUSCA)
-// ==========================================
-
-// Função de busca tratada contra erros
-async function searchBible(referenceText, translationSelectValue) {
-    try {
-        // Mapeia traduções para garantir resposta em Português
-        let apiTranslation = 'almeida';
-        if (translationSelectValue && translationSelectValue.toLowerCase().includes('kjv')) {
-            apiTranslation = 'almeida'; // Força Almeida para garantir textos em PT
-        }
-
-        // Remove acentos e caracteres especiais da busca (ex: "joão" -> "joao")
-        const cleanRef = referenceText.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-        const url = `https://bible-api.com/${encodeURIComponent(cleanRef)}?translation=${apiTranslation}`;
-
-        const response = await fetch(url);
-        if (!response.ok) {
-            throw new Error("Versículo não encontrado.");
-        }
-
-        const data = await response.json();
-        return data;
-    } catch (error) {
-        console.error("Erro ao carregar o versículo:", error);
-        return null;
-    }
-}
-
-// Escuta cliques em todos os botões de busca da Bíblia
+// BUSCA DA BÍBLIA COM TRATAMENTO DIRETO
 document.addEventListener('click', async (e) => {
-    // Detecta se o elemento clicado é o botão de busca da Bíblia
-    const searchBtn = e.target.closest('button');
-    if (!searchBtn) return;
-
-    // Identifica se é o botão "Buscar" do painel da Bíblia
-    const isBibleSearch = searchBtn.innerText.trim().toLowerCase() === 'buscar' || searchBtn.id === 'search-bible-btn';
+    const target = e.target;
     
-    if (isBibleSearch) {
-        // Localiza os campos na tela independente dos IDs
-        const inputField = document.querySelector('input[placeholder*="joao"], input[placeholder*="joão"], #bible-search-input') || 
-                           Array.from(document.querySelectorAll('input')).find(i => i.value.toLowerCase().includes('joao') || i.value.toLowerCase().includes('joão'));
-        
-        const feedbackContainer = document.querySelector('.carregando, #bible-result, #bible-loading') || searchBtn.parentElement.parentElement;
-        const editorArea = document.querySelector('textarea, #sermon-content');
-        const translationSelect = document.querySelector('select');
+    // Verifica se o elemento clicado é o botão de busca
+    if (target && (target.innerText?.trim().toLowerCase() === 'buscar' || target.id === 'search-bible-btn')) {
+        e.preventDefault();
 
-        if (!inputField || !inputField.value.trim()) {
-            alert("Por favor, digite a referência desejada (ex: joao 3:16).");
+        // Procura a caixa de texto da referência
+        const inputRef = document.querySelector('input[placeholder*="joao"], input[placeholder*="joão"]') || 
+                         Array.from(document.querySelectorAll('input')).find(i => i.value.trim().length > 0);
+
+        if (!inputRef || !inputRef.value.trim()) {
+            alert("Digite a referência bíblica (ex: joao 3:16)");
             return;
         }
 
-        // Procura ou cria o elemento de status visual
-        let statusEl = document.getElementById('bible-status-msg');
-        if (!statusEl) {
-            statusEl = document.createElement('div');
-            statusEl.id = 'bible-status-msg';
-            statusEl.className = 'text-xs text-amber-400 mt-2 text-center';
-            feedbackContainer.appendChild(statusEl);
+        const rawRef = inputRef.value.trim();
+        const cleanRef = rawRef.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+        // Procura a área para avisar o utilizador
+        let loadingText = document.getElementById('bible-loading-msg');
+        if (!loadingText) {
+            loadingText = document.createElement('p');
+            loadingText.id = 'bible-loading-msg';
+            loadingText.className = 'text-xs text-amber-400 mt-2 text-center';
+            target.parentElement.appendChild(loadingText);
         }
 
-        statusEl.innerText = "Carregando versículo...";
-        searchBtn.disabled = true;
+        loadingText.innerText = "Carregando versículo...";
+        target.disabled = true;
 
-        const result = await searchBible(inputField.value, translationSelect ? translationSelect.value : 'almeida');
-
-        if (result && result.text) {
-            statusEl.innerText = ""; // Limpa a mensagem "Carregando"
+        try {
+            // Requisição com tradução em Português (almeida)
+            const response = await fetch(`https://bible-api.com/${encodeURIComponent(cleanRef)}?translation=almeida`);
             
-            const verseText = `\n\n📖 ${result.reference} (Almeida)\n"${result.text.trim()}"\n`;
-
-            // Insere diretamente no editor de sermão se existir
-            if (editorArea) {
-                editorArea.value += verseText;
-                alert(`Versículo ${result.reference} adicionado ao seu esboço!`);
-            } else {
-                alert(`${result.reference}:\n\n${result.text.trim()}`);
+            if (!response.ok) {
+                throw new Error("Versículo não encontrado");
             }
-        } else {
-            statusEl.innerText = "⚠️ Versículo não encontrado. Verifique a referência.";
-        }
 
-        searchBtn.disabled = false;
+            const data = await response.json();
+            
+            if (data && data.text) {
+                loadingText.innerText = ""; // Limpa a mensagem de carregamento
+                
+                const formattedVerse = `\n\n📖 ${data.reference} (Almeida)\n"${data.text.trim()}"\n`;
+                
+                // Insere na caixa de texto do sermão
+                const editor = document.querySelector('textarea');
+                if (editor) {
+                    editor.value += formattedVerse;
+                    alert(`Versículo ${data.reference} inserido com sucesso!`);
+                } else {
+                    alert(`${data.reference}:\n\n${data.text.trim()}`);
+                }
+            } else {
+                loadingText.innerText = "⚠️ Referência não encontrada.";
+            }
+        } catch (err) {
+            console.error(err);
+            loadingText.innerText = "⚠️ Erro ao procurar versículo. Verifique a referência.";
+        } finally {
+            target.disabled = false;
+        }
     }
 });
 
-// ==========================================
-// 3. GRAVAÇÃO E CARREGAMENTO DE SERMÕES
-// ==========================================
-
+// FIRESTORE: SALVAR E CARREGAR
 const sermonForm = document.getElementById('sermon-form');
 if (sermonForm) {
     sermonForm.addEventListener('submit', async (e) => {
@@ -198,7 +170,7 @@ if (sermonForm) {
             alert("Sermão salvo com sucesso!");
             loadSermons();
         } catch (error) {
-            console.error("Erro ao salvar sermão:", error);
+            console.error("Erro ao salvar:", error);
             alert("Erro ao salvar.");
         }
     });
@@ -221,7 +193,7 @@ async function loadSermons() {
         sermonsList.innerHTML = '';
 
         if (querySnapshot.empty) {
-            sermonsList.innerHTML = '<p class="text-gray-400 text-sm">Nenhum sermão salvo ainda.</p>';
+            sermonsList.innerHTML = '<p class="text-gray-400 text-sm">Nenhum sermão salvo.</p>';
             return;
         }
 
